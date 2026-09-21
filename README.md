@@ -101,4 +101,22 @@ uv run python -m eval.metrics runs/
 
 ## Status
 
-Work in progress.
+Working end to end against local models. 86 tests cover the parts that need no model at
+all: quote validation, the mechanical question rules, routing and probe budgets, the
+degeneracy guards, and the full graph driven by a scripted fake client.
+
+What the live runs have shown so far:
+
+- The plumbing works. Structured output via Ollama's JSON-schema `format` parameter
+  validates straight into Pydantic models with no parsing layer.
+- `qwen3:8b` is not good enough for the critic role. It passed a question that was both
+  hypothetical and double-barrelled while writing "this is a compound question" in its own
+  feedback field, then later rejected every well-formed question it was shown. Unreliable
+  in both directions, which is why the mechanical rules exist and why the critic runs on
+  the larger model.
+- Every rejected question is now recorded in the saved transcript with its source
+  (`rules` or `model`), so a stalled interview can be diagnosed by reading the run instead
+  of re-running it under instrumentation.
+
+Not done yet: tuning the interviewer against a model that can sustain a full interview,
+and a synthesis run over three real transcripts.
