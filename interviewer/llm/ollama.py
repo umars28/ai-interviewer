@@ -3,7 +3,7 @@ import os
 import httpx
 from pydantic import ValidationError
 
-from interviewer.llm.base import T, LLMError, Msg, Role
+from interviewer.llm.base import LLMError, Msg, Role, T
 
 MODELS: dict[Role, str] = {
     Role.INTERVIEWER: "qwen3:14b",

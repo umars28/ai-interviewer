@@ -44,7 +44,16 @@ def test_a_theme_with_a_real_quote_survives():
     client = FakeClient()
     client.script(
         Role.SYNTHESIZER,
-        Synthesis(themes=[theme("Silent failure precedes the switch", "mira", 1, "failing silently for three weeks")]),
+        Synthesis(
+            themes=[
+                theme(
+                    "Silent failure precedes the switch",
+                    "mira",
+                    1,
+                    "failing silently for three weeks",
+                )
+            ]
+        ),
     )
 
     report = synthesize(GOAL, INTERVIEWS, client, retries=0)
@@ -71,7 +80,9 @@ def test_a_quote_attributed_to_the_wrong_respondent_is_dropped():
     client = FakeClient()
     client.script(
         Role.SYNTHESIZER,
-        Synthesis(themes=[theme("Latency drives churn", "mira", 1, "fourteen seconds to open a note")]),
+        Synthesis(
+            themes=[theme("Latency drives churn", "mira", 1, "fourteen seconds to open a note")]
+        ),
     )
 
     report = synthesize(GOAL, INTERVIEWS, client, retries=0)
@@ -101,7 +112,9 @@ def test_a_theme_keeps_its_valid_evidence_and_loses_the_rest():
                     claim="Loss of trust precedes the switch",
                     evidence=[
                         Evidence(respondent_id="mira", turn_index=1, quote="I lost the glossary"),
-                        Evidence(respondent_id="devan", turn_index=1, quote="I stopped trusting it"),
+                        Evidence(
+                            respondent_id="devan", turn_index=1, quote="I stopped trusting it"
+                        ),
                     ],
                 )
             ]

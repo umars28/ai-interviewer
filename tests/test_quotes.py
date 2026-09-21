@@ -11,7 +11,9 @@ SOURCE = (
 
 def transcript() -> list[Turn]:
     return [
-        Turn(index=0, speaker=Speaker.INTERVIEWER, text="Tell me about the last time you switched."),
+        Turn(
+            index=0, speaker=Speaker.INTERVIEWER, text="Tell me about the last time you switched."
+        ),
         Turn(index=1, speaker=Speaker.RESPONDENT, text=SOURCE),
         Turn(index=2, speaker=Speaker.INTERVIEWER, text="How long did you search?"),
     ]

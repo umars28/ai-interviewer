@@ -40,6 +40,7 @@ def _opens_a_question(clause: str) -> bool:
     text = clause.strip()
     return bool(WH_OPENER.match(text) or AUX_WITH_SUBJECT.match(text))
 
+
 MAX_SENTENCES = 2
 MAX_WORDS = 45
 

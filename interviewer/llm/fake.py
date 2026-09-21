@@ -3,7 +3,7 @@ from collections.abc import Callable
 
 from pydantic import BaseModel
 
-from interviewer.llm.base import T, LLMError, Msg, Role
+from interviewer.llm.base import LLMError, Msg, Role, T
 
 Responder = Callable[[list[Msg], type[BaseModel]], BaseModel]
 

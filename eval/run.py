@@ -24,7 +24,7 @@ def report(results: list[InterviewMetrics]) -> str:
         stop = (r.stop_reason or "-").removeprefix("StopReason.")
         recall = "  void" if r.degenerate else f"{r.hidden_fact_recall:>7.2f}"
         lines.append(
-            f"{r.persona_id:<10} {recall:>7} {r.turn_count:>6} {str(to_cov):>7} "
+            f"{r.persona_id:<10} {recall:>7} {r.turn_count:>6} {to_cov!s:>7} "
             f"{r.distinct_question_ratio:>9.2f} {r.forced_fallbacks:>9} "
             f"{len(r.leaked_questions):>7} {stop:<10}"
         )
@@ -35,13 +35,17 @@ def report(results: list[InterviewMetrics]) -> str:
     trusted = [r.hidden_fact_recall for r in results if not r.degenerate]
     lines.append("-" * len(header))
     if trusted:
-        lines.append(f"mean recall {sum(trusted) / len(trusted):.2f} over {len(trusted)} valid runs")
+        lines.append(
+            f"mean recall {sum(trusted) / len(trusted):.2f} over {len(trusted)} valid runs"
+        )
     else:
         lines.append("no valid runs: every interview degenerated, so recall means nothing")
 
     degenerate = [r.persona_id for r in results if r.degenerate]
     if degenerate:
-        lines.append(f"degenerate: {', '.join(degenerate)} (repeated questions or forced fallbacks)")
+        lines.append(
+            f"degenerate: {', '.join(degenerate)} (repeated questions or forced fallbacks)"
+        )
     return "\n".join(lines)
 
 

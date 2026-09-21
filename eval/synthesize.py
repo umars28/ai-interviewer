@@ -31,14 +31,18 @@ def render(report: SynthesisReport) -> str:
     for theme in report.themes:
         lines.append(f"## {theme.claim}")
         for evidence in theme.evidence:
-            lines.append(f'  - {evidence.respondent_id} (turn {evidence.turn_index}): "{evidence.quote}"')
+            lines.append(
+                f'  - {evidence.respondent_id} (turn {evidence.turn_index}): "{evidence.quote}"'
+            )
         lines.append("")
     if report.contradictions:
         lines.append("## Contradictions")
         for contradiction in report.contradictions:
             lines.append(f"- {contradiction.description}")
             for evidence in contradiction.evidence:
-                lines.append(f'    {evidence.respondent_id} (turn {evidence.turn_index}): "{evidence.quote}"')
+                lines.append(
+                    f'    {evidence.respondent_id} (turn {evidence.turn_index}): "{evidence.quote}"'
+                )
     if report.rejected:
         lines += ["", f"Dropped {len(report.rejected)} unverifiable quotes:"]
         lines += [f"  - {quote!r}: {reason}" for quote, reason in report.rejected]

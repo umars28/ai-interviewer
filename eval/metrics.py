@@ -6,19 +6,101 @@ from interviewer.persona import Persona
 from interviewer.state import GoalStatus, InterviewState, Speaker, StopReason, Turn
 
 STOPWORDS = frozenset(
-    """
-    a an and are as at be been because before but by did do does for from had has have
-    her his how in into is it its of on or she that the their them then there these they
-    this to was were what when where which who why will with would you your about after
-    still never about more most some very just also than too own
-    """.split()
+    [
+        "a",
+        "an",
+        "and",
+        "are",
+        "as",
+        "at",
+        "be",
+        "been",
+        "because",
+        "before",
+        "but",
+        "by",
+        "did",
+        "do",
+        "does",
+        "for",
+        "from",
+        "had",
+        "has",
+        "have",
+        "her",
+        "his",
+        "how",
+        "in",
+        "into",
+        "is",
+        "it",
+        "its",
+        "of",
+        "on",
+        "or",
+        "she",
+        "that",
+        "the",
+        "their",
+        "them",
+        "then",
+        "there",
+        "these",
+        "they",
+        "this",
+        "to",
+        "was",
+        "were",
+        "what",
+        "when",
+        "where",
+        "which",
+        "who",
+        "why",
+        "will",
+        "with",
+        "would",
+        "you",
+        "your",
+        "about",
+        "after",
+        "still",
+        "never",
+        "about",
+        "more",
+        "most",
+        "some",
+        "very",
+        "just",
+        "also",
+        "than",
+        "too",
+        "own",
+    ]
 )
 
 NUMBER_WORDS = frozenset(
-    """
-    one two three four five six seven eight nine ten twelve fourteen twenty thirty forty
-    fifty sixty hundred thousand
-    """.split()
+    [
+        "one",
+        "two",
+        "three",
+        "four",
+        "five",
+        "six",
+        "seven",
+        "eight",
+        "nine",
+        "ten",
+        "twelve",
+        "fourteen",
+        "twenty",
+        "thirty",
+        "forty",
+        "fifty",
+        "sixty",
+        "hundred",
+        "thousand",
+    ]
 )
 
 TOKEN = re.compile(r"[a-z0-9]+")
@@ -27,7 +109,9 @@ SURFACED_THRESHOLD = 0.5
 
 def distinctive_tokens(text: str) -> set[str]:
     tokens = TOKEN.findall(text.casefold())
-    return {t for t in tokens if t not in STOPWORDS and (len(t) > 3 or t.isdigit() or t in NUMBER_WORDS)}
+    return {
+        t for t in tokens if t not in STOPWORDS and (len(t) > 3 or t.isdigit() or t in NUMBER_WORDS)
+    }
 
 
 def respondent_text(transcript: list[Turn]) -> str:

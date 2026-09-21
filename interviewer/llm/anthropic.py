@@ -1,4 +1,4 @@
-from interviewer.llm.base import T, LLMError, Msg, Role
+from interviewer.llm.base import LLMError, Msg, Role, T
 
 MODELS: dict[Role, str] = {
     Role.INTERVIEWER: "claude-opus-5",
