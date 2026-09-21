@@ -31,6 +31,7 @@ def save(state: InterviewState, out_dir: Path, label: str) -> Path:
         "goals": [goal.model_dump() for goal in state.get("goals", [])],
         "facts": [fact.model_dump() for fact in state.get("facts", [])],
         "emergent": state.get("emergent", []),
+        "rejections": [r.model_dump() for r in state.get("rejection_log", [])],
         "transcript": [turn.model_dump() for turn in state.get("transcript", [])],
     }
     path.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")

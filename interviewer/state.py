@@ -59,6 +59,13 @@ class Verdict(BaseModel):
     feedback: str = ""
 
 
+class Rejection(BaseModel):
+    question: str
+    source: str
+    violations: list[str]
+    feedback: str
+
+
 class PlannedQuestion(BaseModel):
     goal_id: str
     question: str
@@ -83,6 +90,7 @@ class InterviewState(TypedDict, total=False):
     critic_feedback: str | None
     critic_rejections: int
     last_verdict: Verdict | None
+    rejection_log: list[Rejection]
     forced_fallbacks: int
     last_assessment: Assessment | None
     stop_reason: StopReason | None
@@ -112,6 +120,7 @@ def initial_state(research_goal: str) -> InterviewState:
         critic_feedback=None,
         critic_rejections=0,
         last_verdict=None,
+        rejection_log=[],
         forced_fallbacks=0,
         last_assessment=None,
         stop_reason=None,
