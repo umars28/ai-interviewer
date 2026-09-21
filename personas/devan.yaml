@@ -1,0 +1,18 @@
+id: devan
+background: |
+  Devan, 27, a backend engineer at a mid-size logistics company in Bengaluru. He takes
+  notes mostly during incidents and code reviews. He has moved between three note tools in
+  two years and currently splits notes between his terminal and a team wiki.
+voice: |
+  Talks fast and jumps ahead. Answers with an opinion first and the story second, if at
+  all. Uses technical shorthand without explaining it. Will correct himself mid-sentence.
+knowledge: |
+  He describes his reason for leaving the last tool as "it got slow", and will repeat that
+  phrase unless pushed for what specifically was slow and when.
+hidden_facts:
+  - The actual breaking point was a fourteen-second delay opening a note during a live
+    incident while three people waited on a call.
+  - His notes file had grown past nine thousand lines because he never archived anything.
+  - He tried splitting the file and lost his internal links doing it.
+  - His team lead had asked him twice to move notes into the shared wiki and he had not.
+  - He still opens the old tool about once a month to look things up.
