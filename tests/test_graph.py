@@ -1,5 +1,6 @@
 import pytest
 
+from interviewer import rules
 from interviewer.graph import run_interview
 from interviewer.llm.base import Role
 from interviewer.llm.fake import FakeClient
@@ -88,7 +89,7 @@ def test_transcript_alternates_and_indexes_contiguously():
     ]
 
 
-def test_rejected_question_is_rewritten_before_it_is_asked():
+def test_rule_breaking_question_is_rewritten_without_consulting_the_model():
     client = FakeClient()
     client.script(
         Role.INTERVIEWER,
@@ -96,7 +97,7 @@ def test_rejected_question_is_rewritten_before_it_is_asked():
         question("g1", "Would you use a faster app?"),
         question("g1", "What happened the last time you looked for a note?"),
     )
-    client.script(Role.CRITIC, rejecting("hypothetical"), passing())
+    client.script(Role.CRITIC, passing())
     client.script(Role.ASSESSOR, answered(AnswerKind.CONCRETE, GoalStatus.COVERED))
 
     final = run_interview(GOAL, client, echo_respondent("I gave up after two minutes."))
@@ -104,6 +105,27 @@ def test_rejected_question_is_rewritten_before_it_is_asked():
 
     assert "Would you use a faster app?" not in asked
     assert "What happened the last time you looked for a note?" in asked
+    assert len(client.calls_for(Role.CRITIC)) == 1
+
+
+def test_subtly_leading_question_is_caught_by_the_model_critic():
+    leading = "What made the old app so frustrating for you?"
+    assert rules.check(leading) == []
+
+    client = FakeClient()
+    client.script(
+        Role.INTERVIEWER,
+        plan("g1"),
+        question("g1", leading),
+        question("g1", "What happened the last time you opened the old app?"),
+    )
+    client.script(Role.CRITIC, rejecting("leading"), passing())
+    client.script(Role.ASSESSOR, answered(AnswerKind.CONCRETE, GoalStatus.COVERED))
+
+    final = run_interview(GOAL, client, echo_respondent("It took fourteen seconds to open."))
+    asked = [turn.text for turn in final["transcript"] if turn.speaker is Speaker.INTERVIEWER]
+
+    assert leading not in asked
     assert len(client.calls_for(Role.CRITIC)) == 2
 
 
