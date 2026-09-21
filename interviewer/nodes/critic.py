@@ -16,9 +16,13 @@ def critic(state: InterviewState, client: LLMClient) -> InterviewState:
     if not question:
         return {"critic_feedback": "no question was produced", "critic_rejections": 1}
 
-    mechanical = rules.check(question)
+    asked = views.asked_questions(state.get("transcript", []))
+    mechanical = rules.check(question, asked)
     if mechanical:
-        return _reject(state, Verdict(passed=False, violations=mechanical, feedback=rules.describe(mechanical)))
+        return _reject(
+            state,
+            Verdict(passed=False, violations=mechanical, feedback=rules.describe(mechanical)),
+        )
 
     covered = [goal for goal in state.get("goals", []) if goal.status is GoalStatus.COVERED]
     rendered = prompts.render(

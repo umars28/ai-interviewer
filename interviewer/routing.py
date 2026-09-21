@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from interviewer.state import (
     FATIGUE_MIN_CHARS,
     FATIGUE_WINDOW,
+    MAX_FORCED_FALLBACKS,
     MAX_PROBE_DEPTH,
     MAX_TURNS,
     AnswerKind,
@@ -32,6 +33,8 @@ def is_fatigued(recent_lengths: list[int]) -> bool:
 def should_stop(state: InterviewState) -> StopReason | None:
     if all_covered(state.get("goals", [])):
         return StopReason.COVERAGE
+    if state.get("forced_fallbacks", 0) >= MAX_FORCED_FALLBACKS:
+        return StopReason.STALLED
     if state.get("turn_count", 0) >= MAX_TURNS:
         return StopReason.TURN_CAP
     if is_fatigued(state.get("recent_lengths", [])):

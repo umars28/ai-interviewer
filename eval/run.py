@@ -14,19 +14,34 @@ DEFAULT_GOAL = "why people abandon the note-taking app they were using"
 
 
 def report(results: list[InterviewMetrics]) -> str:
-    header = f"{'persona':<10} {'recall':>7} {'turns':>6} {'to_cov':>7} {'leaked':>7} {'stop':<12}"
+    header = (
+        f"{'persona':<10} {'recall':>7} {'turns':>6} {'to_cov':>7} "
+        f"{'distinct':>9} {'fallback':>9} {'leaked':>7} {'stop':<10}"
+    )
     lines = [header, "-" * len(header)]
     for r in results:
         to_cov = r.turns_to_coverage if r.turns_to_coverage is not None else "-"
         stop = (r.stop_reason or "-").removeprefix("StopReason.")
+        recall = "  void" if r.degenerate else f"{r.hidden_fact_recall:>7.2f}"
         lines.append(
-            f"{r.persona_id:<10} {r.hidden_fact_recall:>7.2f} {r.turn_count:>6} "
-            f"{str(to_cov):>7} {len(r.leaked_questions):>7} {stop:<12}"
+            f"{r.persona_id:<10} {recall:>7} {r.turn_count:>6} {str(to_cov):>7} "
+            f"{r.distinct_question_ratio:>9.2f} {r.forced_fallbacks:>9} "
+            f"{len(r.leaked_questions):>7} {stop:<10}"
         )
-    if results:
-        mean = sum(r.hidden_fact_recall for r in results) / len(results)
-        leaked = sum(len(r.leaked_questions) for r in results)
-        lines += ["-" * len(header), f"mean recall {mean:.2f}    leaked questions {leaked}"]
+
+    if not results:
+        return "\n".join(lines)
+
+    trusted = [r.hidden_fact_recall for r in results if not r.degenerate]
+    lines.append("-" * len(header))
+    if trusted:
+        lines.append(f"mean recall {sum(trusted) / len(trusted):.2f} over {len(trusted)} valid runs")
+    else:
+        lines.append("no valid runs: every interview degenerated, so recall means nothing")
+
+    degenerate = [r.persona_id for r in results if r.degenerate]
+    if degenerate:
+        lines.append(f"degenerate: {', '.join(degenerate)} (repeated questions or forced fallbacks)")
     return "\n".join(lines)
 
 

@@ -15,12 +15,23 @@ MODELS: dict[Role, str] = {
 
 DEFAULT_HOST = "http://localhost:11434"
 TIMEOUT_SECONDS = 300.0
+DEFAULT_NUM_CTX = 16384
+
+
+def resolve_models() -> dict[Role, str]:
+    override_all = os.getenv("OLLAMA_MODEL")
+    resolved = {}
+    for role in Role:
+        per_role = os.getenv(f"OLLAMA_MODEL_{role.name}")
+        resolved[role] = per_role or override_all or MODELS[role]
+    return resolved
 
 
 class OllamaClient:
     def __init__(self, host: str | None = None, models: dict[Role, str] | None = None) -> None:
         self.host = (host or os.getenv("OLLAMA_HOST") or DEFAULT_HOST).rstrip("/")
-        self.models = models or MODELS
+        self.models = models or resolve_models()
+        self.num_ctx = int(os.getenv("OLLAMA_NUM_CTX") or DEFAULT_NUM_CTX)
         self._http = httpx.Client(timeout=TIMEOUT_SECONDS)
 
     def structured(self, role: Role, messages: list[Msg], schema: type[T]) -> T:
@@ -30,7 +41,7 @@ class OllamaClient:
             "stream": False,
             "format": schema.model_json_schema(),
             "think": False,
-            "options": {"temperature": 0.7},
+            "options": {"temperature": 0.7, "num_ctx": self.num_ctx},
         }
         try:
             response = self._http.post(f"{self.host}/api/chat", json=payload)

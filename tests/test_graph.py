@@ -27,8 +27,21 @@ def plan(*ids: str) -> GoalPlan:
     return GoalPlan(goals=[Goal(id=i, question=f"what about {i}") for i in ids])
 
 
-def question(goal_id: str, text: str = "What happened the last time?") -> PlannedQuestion:
-    return PlannedQuestion(goal_id=goal_id, question=text)
+def question(goal_id: str, text: str | None = None) -> PlannedQuestion:
+    return PlannedQuestion(
+        goal_id=goal_id,
+        question=text or f"What happened with {goal_id} the last time?",
+    )
+
+
+def varied_questions(goal_id: str = "g1"):
+    counter = iter(range(1, 1000))
+
+    def produce(_messages, _schema) -> PlannedQuestion:
+        n = next(counter)
+        return PlannedQuestion(goal_id=goal_id, question=f"What happened on occasion {n}?")
+
+    return produce
 
 
 def passing() -> Verdict:
@@ -150,10 +163,7 @@ def test_a_question_the_critic_never_cleared_is_never_sent():
 def test_vague_answers_are_probed_then_the_interview_moves_on():
     client = FakeClient()
     client.script(Role.INTERVIEWER, plan("g1", "g2"))
-    client.respond_with(
-        Role.INTERVIEWER,
-        lambda _messages, _schema: question("g1", "How long exactly?"),
-    )
+    client.respond_with(Role.INTERVIEWER, varied_questions())
     client.respond_with(Role.CRITIC, lambda _messages, _schema: passing())
     client.respond_with(
         Role.ASSESSOR,
@@ -171,7 +181,7 @@ def test_vague_answers_are_probed_then_the_interview_moves_on():
 def test_short_shrinking_answers_end_the_interview_early():
     client = FakeClient()
     client.script(Role.INTERVIEWER, plan("g1", "g2"))
-    client.respond_with(Role.INTERVIEWER, lambda _m, _s: question("g1"))
+    client.respond_with(Role.INTERVIEWER, varied_questions())
     client.respond_with(Role.CRITIC, lambda _m, _s: passing())
     client.respond_with(
         Role.ASSESSOR,

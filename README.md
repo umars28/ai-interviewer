@@ -63,7 +63,16 @@ ollama pull qwen3:14b
 ollama pull qwen3:8b
 ```
 
-`qwen3:14b` (~9 GB) and `qwen3:8b` (~5 GB) stay resident together on 24 GB. Keep `OLLAMA_MAX_LOADED_MODELS=2` — the graph alternates between the two models every turn, and with a limit of one Ollama silently unloads and reloads on each switch. There is no error; the interview just gets many times slower.
+`qwen3:14b` (~9 GB) and `qwen3:8b` (~5 GB) stay resident together on 24 GB.
+
+Two Ollama defaults will quietly degrade the run if left alone:
+
+| Setting | Why it matters |
+| --- | --- |
+| `OLLAMA_MAX_LOADED_MODELS=2` | The graph alternates between two models every turn. With a limit of one, Ollama unloads and reloads on each switch. No error — the interview just gets many times slower. |
+| `OLLAMA_NUM_CTX=16384` | Ollama's default context is 4096 tokens. The interviewer prompt carries the growing transcript and crosses that around turn 15, after which the earliest turns are silently truncated and the agent starts repeating questions it already asked. |
+
+Override models per role with `OLLAMA_MODEL_INTERVIEWER`, `OLLAMA_MODEL_CRITIC`, and so on, or all of them at once with `OLLAMA_MODEL`.
 
 ## Usage
 

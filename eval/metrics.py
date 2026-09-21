@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 
 from interviewer import rules
 from interviewer.persona import Persona
-from interviewer.state import GoalStatus, InterviewState, Speaker, Turn
+from interviewer.state import GoalStatus, InterviewState, Speaker, StopReason, Turn
 
 STOPWORDS = frozenset(
     """
@@ -75,6 +75,13 @@ def rule_violations_reaching_respondent(transcript: list[Turn]) -> list[tuple[st
     return leaked
 
 
+def distinct_question_ratio(transcript: list[Turn]) -> float:
+    asked = questions_asked(transcript)
+    if not asked:
+        return 0.0
+    return round(len({rules.fingerprint(q) for q in asked}) / len(asked), 3)
+
+
 def turns_to_coverage(state: InterviewState) -> int | None:
     goals = state.get("goals", [])
     if not goals or any(goal.status is not GoalStatus.COVERED for goal in goals):
@@ -92,6 +99,7 @@ class InterviewMetrics:
     fact_scores: list[FactScore]
     leaked_questions: list[tuple[str, list[str]]]
     forced_fallbacks: int
+    distinct_question_ratio: float
     goals_covered: int
     goals_total: int
 
@@ -99,6 +107,18 @@ class InterviewMetrics:
     def leaked_rate(self) -> float:
         total = self.turn_count or 1
         return round(len(self.leaked_questions) / total, 3)
+
+    @property
+    def degenerate(self) -> bool:
+        return (
+            self.distinct_question_ratio < 0.8
+            or self.forced_fallbacks * 2 >= max(self.turn_count, 1)
+            or self.stop_reason == str(StopReason.STALLED)
+        )
+
+    @property
+    def trustworthy_recall(self) -> float | None:
+        return None if self.degenerate else self.hidden_fact_recall
 
 
 def evaluate(persona: Persona, state: InterviewState) -> InterviewMetrics:
@@ -116,6 +136,7 @@ def evaluate(persona: Persona, state: InterviewState) -> InterviewMetrics:
         fact_scores=scores,
         leaked_questions=rule_violations_reaching_respondent(transcript),
         forced_fallbacks=state.get("forced_fallbacks", 0),
+        distinct_question_ratio=distinct_question_ratio(transcript),
         goals_covered=sum(1 for g in goals if g.status is GoalStatus.COVERED),
         goals_total=len(goals),
     )

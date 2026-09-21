@@ -26,6 +26,7 @@ class StopReason(StrEnum):
     COVERAGE = "coverage"
     FATIGUE = "fatigue"
     TURN_CAP = "turn_cap"
+    STALLED = "stalled"
 
 
 class Goal(BaseModel):
@@ -90,6 +91,7 @@ class InterviewState(TypedDict, total=False):
 MAX_TURNS = 25
 MAX_PROBE_DEPTH = 3
 MAX_CRITIC_REJECTIONS = 3
+MAX_FORCED_FALLBACKS = 3
 FATIGUE_WINDOW = 3
 FATIGUE_MIN_CHARS = 40
 

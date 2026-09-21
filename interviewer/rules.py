@@ -1,5 +1,7 @@
 import re
 
+TOKEN = re.compile(r"[a-z0-9]+")
+
 HYPOTHETICAL = re.compile(
     r"\b(would you|will you|could you see yourself|do you think you.d|if you had|"
     r"suppose you|imagine you|might you)\b",
@@ -8,6 +10,12 @@ HYPOTHETICAL = re.compile(
 
 CLOSED_OPENERS = re.compile(
     r"^\s*(was|were|did|do|does|is|are|have|has|had|can|could|should|would|will)\b",
+    re.IGNORECASE,
+)
+
+INVITATION = re.compile(
+    r"^\s*(can|could|would|will)\s+you\s+(please\s+)?"
+    r"(tell|describe|walk|explain|share|talk|say|give|show|take)\b",
     re.IGNORECASE,
 )
 
@@ -54,13 +62,17 @@ def is_double_barrelled(text: str) -> bool:
     return False
 
 
-def check(question: str) -> list[str]:
+def fingerprint(question: str) -> str:
+    return " ".join(TOKEN.findall(question.casefold()))
+
+
+def check(question: str, asked: list[str] | tuple[str, ...] = ()) -> list[str]:
     text = question.strip()
     violations: list[str] = []
 
     if HYPOTHETICAL.search(text):
         violations.append("hypothetical")
-    if CLOSED_OPENERS.match(text):
+    if CLOSED_OPENERS.match(text) and not INVITATION.match(text):
         violations.append("closed")
     if OTHERS.search(text):
         violations.append("speculative_about_others")
@@ -68,6 +80,8 @@ def check(question: str) -> list[str]:
         violations.append("double")
     if sentence_count(text) > MAX_SENTENCES or len(text.split()) > MAX_WORDS:
         violations.append("too_long")
+    if fingerprint(text) in {fingerprint(prior) for prior in asked}:
+        violations.append("repeat")
 
     return violations
 
@@ -79,5 +93,6 @@ def describe(violations: list[str]) -> str:
         "double": "packs two questions into one, so one of them gets lost",
         "too_long": "too long; the question is buried",
         "speculative_about_others": "asks them to speak for other people",
+        "repeat": "already asked in this interview, word for word",
     }
     return "; ".join(explanations.get(v, v) for v in violations)
