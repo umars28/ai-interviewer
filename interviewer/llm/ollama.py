@@ -1,4 +1,5 @@
 import os
+import time
 
 import httpx
 from pydantic import ValidationError
@@ -16,6 +17,8 @@ MODELS: dict[Role, str] = {
 DEFAULT_HOST = "http://localhost:11434"
 TIMEOUT_SECONDS = 300.0
 DEFAULT_NUM_CTX = 16384
+MAX_ATTEMPTS = 4
+RETRY_BASE_SECONDS = 2.0
 
 
 def resolve_models() -> dict[Role, str]:
@@ -33,6 +36,7 @@ class OllamaClient:
         self.models = models or resolve_models()
         self.num_ctx = int(os.getenv("OLLAMA_NUM_CTX") or DEFAULT_NUM_CTX)
         self._http = httpx.Client(timeout=TIMEOUT_SECONDS)
+        self._sleep = time.sleep
 
     def structured(self, role: Role, messages: list[Msg], schema: type[T]) -> T:
         payload = {
@@ -43,19 +47,32 @@ class OllamaClient:
             "think": False,
             "options": {"temperature": 0.7, "num_ctx": self.num_ctx},
         }
-        try:
-            response = self._http.post(f"{self.host}/api/chat", json=payload)
-            response.raise_for_status()
-        except httpx.HTTPError as exc:
-            raise LLMError(f"ollama request failed for role {role}: {exc}") from exc
-
-        content = response.json()["message"]["content"]
+        content = self._post_with_retry(role, payload)
         try:
             return schema.model_validate_json(content)
         except ValidationError as exc:
             raise LLMError(
                 f"ollama returned invalid {schema.__name__} for role {role}: {content[:400]}"
             ) from exc
+
+    def _post_with_retry(self, role: Role, payload: dict) -> str:
+        last: Exception | None = None
+        for attempt in range(MAX_ATTEMPTS):
+            try:
+                response = self._http.post(f"{self.host}/api/chat", json=payload)
+                response.raise_for_status()
+                return response.json()["message"]["content"]
+            except httpx.HTTPStatusError as exc:
+                last = exc
+                if exc.response.status_code < 500:
+                    break
+            except httpx.TransportError as exc:
+                last = exc
+            if attempt + 1 < MAX_ATTEMPTS:
+                self._sleep(RETRY_BASE_SECONDS * 2**attempt)
+        raise LLMError(
+            f"ollama request failed for role {role} after {MAX_ATTEMPTS} attempts: {last}"
+        ) from last
 
     def close(self) -> None:
         self._http.close()
