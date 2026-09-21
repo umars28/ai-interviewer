@@ -23,6 +23,7 @@ def assess(state: InterviewState, client: LLMClient) -> InterviewState:
         answer=answer_turn.text,
     )
     assessment = client.structured(Role.ASSESSOR, [user(rendered)], Assessment)
+    assessment = _downgrade_unevidenced(assessment)
 
     facts = [
         *state.get("facts", []),
@@ -31,10 +32,9 @@ def assess(state: InterviewState, client: LLMClient) -> InterviewState:
 
     goals = state.get("goals", [])
     if goal is not None:
+        reported = _cap_by_evidence(assessment)
         goals = [
-            g.model_copy(update={"status": _merge(g.status, assessment.goal_progress)})
-            if g.id == goal.id
-            else g
+            g.model_copy(update={"status": _merge(g.status, reported)}) if g.id == goal.id else g
             for g in goals
         ]
 
@@ -63,3 +63,15 @@ _RANK = {GoalStatus.UNTOUCHED: 0, GoalStatus.SHALLOW: 1, GoalStatus.COVERED: 2}
 
 def _merge(current: GoalStatus, reported: GoalStatus) -> GoalStatus:
     return current if _RANK[current] >= _RANK[reported] else reported
+
+
+def _downgrade_unevidenced(assessment: Assessment) -> Assessment:
+    if assessment.kind is AnswerKind.CONCRETE and not assessment.facts:
+        return assessment.model_copy(update={"kind": AnswerKind.VAGUE})
+    return assessment
+
+
+def _cap_by_evidence(assessment: Assessment) -> GoalStatus:
+    if assessment.goal_progress is GoalStatus.COVERED and not assessment.facts:
+        return GoalStatus.SHALLOW
+    return assessment.goal_progress

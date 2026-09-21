@@ -53,6 +53,8 @@ def rejecting(*violations: str) -> Verdict:
 
 
 def answered(kind: AnswerKind, progress: GoalStatus, facts: list[str] | None = None) -> Assessment:
+    if facts is None and progress is GoalStatus.COVERED:
+        facts = ["she described a specific occasion"]
     return Assessment(kind=kind, goal_progress=progress, facts=facts or [])
 
 
@@ -222,11 +224,13 @@ def test_emergent_topics_are_recorded_once():
     client.script(
         Role.ASSESSOR,
         Assessment(
+            facts=["the team shared one folder"],
             kind=AnswerKind.NEW_THREAD,
             goal_progress=GoalStatus.COVERED,
             emergent_topic="shared folders with a team",
         ),
         Assessment(
+            facts=["the folder was shared with four people"],
             kind=AnswerKind.CONCRETE,
             goal_progress=GoalStatus.COVERED,
             emergent_topic="shared folders with a team",

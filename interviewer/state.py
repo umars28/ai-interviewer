@@ -47,8 +47,8 @@ class Fact(BaseModel):
 
 
 class Assessment(BaseModel):
-    kind: AnswerKind
     facts: list[str] = Field(default_factory=list)
+    kind: AnswerKind
     goal_progress: GoalStatus
     emergent_topic: str | None = None
 
