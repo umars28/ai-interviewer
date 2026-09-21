@@ -101,9 +101,25 @@ uv run python -m eval.metrics runs/
 
 ## Status
 
-Working end to end against local models. 86 tests cover the parts that need no model at
+Working end to end against local models. 91 tests cover the parts that need no model at
 all: quote validation, the mechanical question rules, routing and probe budgets, the
-degeneracy guards, and the full graph driven by a scripted fake client.
+evidence invariant, the degeneracy guards, and the full graph driven by a scripted fake
+client.
+
+First valid baseline, one persona on `qwen3:14b` / `qwen3:8b`:
+
+| | |
+| --- | --- |
+| Hidden fact recall | 0.20 (1 of 5) |
+| Turns to coverage | 9 |
+| Distinct question ratio | 1.00 |
+| Forced fallbacks | 0 |
+| Leaked rule violations | 0 |
+
+Nine distinct questions, progressively narrowing from "what did you use it for" to "describe
+the moment you realised the glossary was lost". One double-barrelled question was caught by
+the mechanical rules and rewritten before it was sent. The recall is low and that is the
+number to improve; the point is that it is now a number that can be wrong.
 
 What the live runs have shown so far:
 
@@ -114,9 +130,14 @@ What the live runs have shown so far:
   feedback field, then later rejected every well-formed question it was shown. Unreliable
   in both directions, which is why the mechanical rules exist and why the critic runs on
   the larger model.
+- The assessor marked goals covered while extracting no facts at all, so an interview
+  could stop on coverage with nothing to read back. Prompting helped; the fix that holds
+  is the invariant in `assess.py` — a goal cannot reach `covered` without at least one
+  extracted fact, and an answer called concrete with no facts is reclassified as vague and
+  probed again.
 - Every rejected question is now recorded in the saved transcript with its source
   (`rules` or `model`), so a stalled interview can be diagnosed by reading the run instead
   of re-running it under instrumentation.
 
-Not done yet: tuning the interviewer against a model that can sustain a full interview,
-and a synthesis run over three real transcripts.
+Not done yet: raising recall above the 0.20 baseline, running all three personas, and a
+synthesis pass over three real transcripts.
