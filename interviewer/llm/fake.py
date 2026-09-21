@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from interviewer.llm.base import T, LLMError, Msg, Role
 
-Responder = Callable[[list[Msg]], BaseModel]
+Responder = Callable[[list[Msg], type[BaseModel]], BaseModel]
 
 
 class FakeClient:
@@ -29,11 +29,14 @@ class FakeClient:
         if self._queues[role]:
             value = self._queues[role].popleft()
         elif role in self._responders:
-            value = self._responders[role](messages)
+            value = self._responders[role](messages, schema)
         else:
             raise LLMError(f"FakeClient has no scripted response for role {role}")
         if not isinstance(value, schema):
-            raise LLMError(f"FakeClient scripted {type(value).__name__}, node expected {schema.__name__}")
+            raise LLMError(
+                f"FakeClient produced {type(value).__name__} but the node asked for "
+                f"{schema.__name__} (role {role}, call {len(self.calls)})"
+            )
         return value
 
     def calls_for(self, role: Role) -> list[list[Msg]]:

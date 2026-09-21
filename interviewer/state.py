@@ -77,9 +77,12 @@ class InterviewState(TypedDict, total=False):
     recent_lengths: list[int]
     turn_count: int
     active_goal_id: str | None
+    probing: bool
     pending_question: str | None
     critic_feedback: str | None
     critic_rejections: int
+    last_verdict: Verdict | None
+    forced_fallbacks: int
     last_assessment: Assessment | None
     stop_reason: StopReason | None
 
@@ -102,9 +105,12 @@ def initial_state(research_goal: str) -> InterviewState:
         recent_lengths=[],
         turn_count=0,
         active_goal_id=None,
+        probing=False,
         pending_question=None,
         critic_feedback=None,
         critic_rejections=0,
+        last_verdict=None,
+        forced_fallbacks=0,
         last_assessment=None,
         stop_reason=None,
     )

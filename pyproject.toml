@@ -21,6 +21,9 @@ build-backend = "setuptools.build_meta"
 where = ["."]
 include = ["interviewer*"]
 
+[tool.setuptools.package-data]
+"interviewer.prompts" = ["*.md"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"
