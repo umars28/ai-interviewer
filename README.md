@@ -10,10 +10,24 @@ Most LLM projects cannot be evaluated: the only judge is "looks good to me". Thi
 
 | Metric | How it is computed |
 | --- | --- |
-| Hidden fact recall | Of 5 planted facts, how many the agent surfaced |
+| Hidden fact recall | Of 5 planted facts, how many the agent surfaced. Only counted from the respondent's own turns — the interviewer saying a fact does not score it. |
 | Leading question rate | Questions that violated the interview rules but still reached the respondent |
 | Turns to coverage | Turns needed before every research goal is covered |
 | Quote validity | Must be 100% — checked by string matching, not by a model |
+| Distinct question ratio | Guard against the metric lying. See below. |
+
+### Why the recall number can lie
+
+The first live run scored 1.00 recall and looked excellent. The transcript showed the agent
+asking one identical fallback question six times while the respondent volunteered every
+planted fact unprompted on turn one. The interview was worthless and the metric said it was
+perfect.
+
+Recall alone measures what the respondent leaked, not what the interviewer earned. So a run
+is marked **degenerate** — and its recall reported as `void` rather than as a number — when
+the distinct question ratio drops below 0.8, when forced fallbacks account for half the
+turns, or when the graph stops with `stalled`. A metric that cannot be embarrassed by a
+broken run is not measuring anything.
 
 ## Design
 

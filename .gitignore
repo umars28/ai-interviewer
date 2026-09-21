@@ -11,4 +11,5 @@ build/
 dist/
 transcripts/
 runs/
+runs*/
 .DS_Store
