@@ -97,7 +97,11 @@ def describe(violations: list[str]) -> str:
     explanations = {
         "hypothetical": "asks what they would do rather than what they did",
         "closed": "opens with a yes/no verb instead of what, why, how, or tell me about",
-        "double": "packs two questions into one, so one of them gets lost",
+        "double": (
+            "packs two questions into one, so one of them gets lost. Delete the clause "
+            "after 'and' or 'or' entirely and ask only the first half — do not reword it "
+            "into a single longer sentence"
+        ),
         "too_long": "too long; the question is buried",
         "speculative_about_others": "asks them to speak for other people",
         "repeat": "already asked in this interview, word for word",

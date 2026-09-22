@@ -29,8 +29,8 @@ the false positive below was found rather than guessed at.
 
 | | |
 | --- | --- |
-| Interviews | 3 synthetic respondents, all stopped on goal coverage rather than a turn cap |
-| Planted-fact recall | 0.47 mean |
+| Interviews | 3 synthetic respondents, stopping on goal coverage rather than a turn cap |
+| Planted-fact recall | 0.10 to 0.47 across runs — see the note on variance below |
 | Repeated or rule-breaking questions sent | 0 |
 | Quote validity in synthesis | 92% — one near-miss paraphrase caught and dropped |
 
@@ -136,22 +136,38 @@ all: quote validation, the mechanical question rules, routing and probe budgets,
 evidence invariant, the degeneracy guards, and the full graph driven by a scripted fake
 client.
 
-Baseline across all three personas on `qwen3:14b` / `qwen3:8b`:
+Two full passes over the same three personas on `qwen3:14b` / `qwen3:8b`, a few commits
+apart:
 
-| persona | recall | turns | to coverage | distinct | fallbacks | leaked |
-| --- | --- | --- | --- | --- | --- | --- |
-| devan | 0.40 | 5 | 5 | 1.00 | 1 | 0 |
-| hanna | 0.60 | 5 | 5 | 1.00 | 0 | 0 |
-| mira | 0.40 | 6 | 6 | 1.00 | 1 | 0 |
-| **mean** | **0.47** | | | | | |
+| persona | pass 1 | pass 2 |
+| --- | --- | --- |
+| devan | 0.40 | 0.00 |
+| hanna | 0.60 | 0.20 |
+| mira | 0.40 | degenerate |
+| **mean** | **0.47** | **0.10** |
 
-All three stopped on coverage rather than on the turn cap, asked no repeated questions, and
-let no rule-violating question through. Between 22 and 27 facts were extracted per
-interview. The first run of the day scored 0.20 over nine turns, so the gain came from
-fixing the extraction path rather than from tuning the interviewer, which is still untouched.
+### The variance is the finding
 
-Recall of 0.47 means roughly half the planted facts stay buried. That is the number to
-improve, and the point of the harness is that it can be wrong in a way you can see.
+Nothing between those two passes should have hurt recall — the only interview-facing change
+loosened a rule that had been rejecting valid questions. Recall still fell by a factor of
+four.
+
+At `temperature` 0.7, one interview per persona is a sample of one. Both passes are
+consistent with the same underlying quality, and neither number means what it appears to
+mean. Any claim of the form "this change improved recall from X to Y" built on single runs
+is unsupported, and an earlier version of this README made exactly that claim.
+
+So `eval.run` takes `--repeat N` and reports mean, min, and max per persona, and prints an
+explicit warning when the range is wide enough that single-run comparisons are meaningless:
+
+```sh
+uv run python -m eval.run --repeat 3 --out runs/
+```
+
+What does hold across both passes: every interview stopped on goal coverage rather than the
+turn cap, no repeated or rule-breaking question reached a respondent, and 21 to 31 facts
+were extracted per interview. Those are structural properties the graph enforces, so they
+do not move with sampling.
 
 What the live runs have shown so far:
 
@@ -201,5 +217,7 @@ it and threw the theme's evidence out.
 That is the whole argument for doing verification in code rather than asking a model to
 check itself.
 
-Not done yet: raising recall above 0.47, and tuning the interviewer itself — every gain so
-far came from fixing plumbing, not from improving how it asks questions.
+Not done yet: enough repeats to establish a real baseline, and tuning the interviewer
+itself. The clearest known weakness is that a rejected question gets reworded rather than
+fixed — shown a double-barrelled question three times in a row, the interviewer rephrased
+it into another double-barrelled question each time instead of dropping one half.
