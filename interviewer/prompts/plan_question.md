@@ -19,7 +19,8 @@ Current focus: {focus}
 {probe_note}
 {critic_feedback}
 
-Write one question.
+Write one question. If a reviewer rejected your previous attempt, do not reword it — the
+transcript above already shows what has been asked, so pick different ground entirely.
 
 Rules:
 - Ask about what happened, not what someone would do. Anchor to a specific past episode:

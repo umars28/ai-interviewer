@@ -106,3 +106,37 @@ def test_a_varied_interview_keeps_its_recall():
 
     assert not metrics.degenerate
     assert metrics.trustworthy_recall == 1.0
+
+
+def test_a_repeat_rejection_moves_the_focus_to_another_goal():
+    from interviewer.routing import select_focus
+    from interviewer.state import Verdict
+
+    state = initial_state("goal")
+    state["goals"] = [
+        Goal(id="g1", question="q1", status=GoalStatus.SHALLOW),
+        Goal(id="g2", question="q2", status=GoalStatus.UNTOUCHED),
+    ]
+    state["active_goal_id"] = "g1"
+    state["last_verdict"] = Verdict(passed=False, violations=["repeat"], feedback="already asked")
+
+    focus = select_focus(state)
+
+    assert focus.goal_id == "g2"
+    assert not focus.probing
+    assert "change subject" in focus.reason
+
+
+def test_a_leading_rejection_does_not_change_the_focus():
+    from interviewer.routing import select_focus
+    from interviewer.state import Verdict
+
+    state = initial_state("goal")
+    state["goals"] = [
+        Goal(id="g1", question="q1", status=GoalStatus.SHALLOW),
+        Goal(id="g2", question="q2", status=GoalStatus.UNTOUCHED),
+    ]
+    state["active_goal_id"] = "g1"
+    state["last_verdict"] = Verdict(passed=False, violations=["leading"], feedback="assumes")
+
+    assert select_focus(state).goal_id == "g1"

@@ -3,7 +3,9 @@ from interviewer.llm import LLMClient, Role, user
 from interviewer.state import (
     AnswerKind,
     Assessment,
+    Classification,
     Fact,
+    FactList,
     GoalStatus,
     InterviewState,
 )
@@ -16,14 +18,37 @@ def assess(state: InterviewState, client: LLMClient) -> InterviewState:
         return {}
 
     goal = views.goal_by_id(state, state.get("active_goal_id"))
-    rendered = prompts.render(
-        "assess",
-        goal=goal.question if goal else state["research_goal"],
-        question=state.get("pending_question") or "",
-        answer=answer_turn.text,
+    question = state.get("pending_question") or ""
+
+    extracted = client.structured(
+        Role.ASSESSOR,
+        [user(prompts.render("extract_facts", question=question, answer=answer_turn.text))],
+        FactList,
     )
-    assessment = client.structured(Role.ASSESSOR, [user(rendered)], Assessment)
-    assessment = _downgrade_unevidenced(assessment)
+    classification = client.structured(
+        Role.ASSESSOR,
+        [
+            user(
+                prompts.render(
+                    "classify",
+                    goal=goal.question if goal else state["research_goal"],
+                    question=question,
+                    answer=answer_turn.text,
+                    facts=views.list_view(extracted.facts),
+                )
+            )
+        ],
+        Classification,
+    )
+
+    assessment = _downgrade_unevidenced(
+        Assessment(
+            facts=extracted.facts,
+            kind=classification.kind,
+            goal_progress=classification.goal_progress,
+            emergent_topic=classification.emergent_topic,
+        )
+    )
 
     facts = [
         *state.get("facts", []),

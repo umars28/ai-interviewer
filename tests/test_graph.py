@@ -9,7 +9,8 @@ from interviewer.state import (
     MAX_PROBE_DEPTH,
     MAX_TURNS,
     AnswerKind,
-    Assessment,
+    Classification,
+    FactList,
     Goal,
     GoalPlan,
     GoalStatus,
@@ -52,10 +53,27 @@ def rejecting(*violations: str) -> Verdict:
     return Verdict(passed=False, violations=list(violations), feedback="anchor to a past episode")
 
 
-def answered(kind: AnswerKind, progress: GoalStatus, facts: list[str] | None = None) -> Assessment:
+def answered(
+    kind: AnswerKind,
+    progress: GoalStatus,
+    facts: list[str] | None = None,
+    emergent: str | None = None,
+) -> tuple[FactList, Classification]:
     if facts is None and progress is GoalStatus.COVERED:
         facts = ["she described a specific occasion"]
-    return Assessment(kind=kind, goal_progress=progress, facts=facts or [])
+    return (
+        FactList(facts=facts or []),
+        Classification(kind=kind, goal_progress=progress, emergent_topic=emergent),
+    )
+
+
+def assessing(kind: AnswerKind, progress: GoalStatus, facts: list[str] | None = None):
+    extracted, classified = answered(kind, progress, facts)
+
+    def produce(_messages, schema):
+        return extracted if schema is FactList else classified
+
+    return produce
 
 
 def echo_respondent(text: str) -> object:
@@ -71,8 +89,8 @@ def test_interview_finishes_when_every_goal_is_covered():
     client.script(Role.CRITIC, passing(), passing())
     client.script(
         Role.ASSESSOR,
-        answered(AnswerKind.CONCRETE, GoalStatus.COVERED, ["searched for two minutes"]),
-        answered(AnswerKind.CONCRETE, GoalStatus.COVERED, ["switched in March"]),
+        *answered(AnswerKind.CONCRETE, GoalStatus.COVERED, ["searched for two minutes"]),
+        *answered(AnswerKind.CONCRETE, GoalStatus.COVERED, ["switched in March"]),
     )
 
     final = run_interview(GOAL, client, echo_respondent("I searched for two minutes."))
@@ -90,7 +108,7 @@ def test_transcript_alternates_and_indexes_contiguously():
     client = FakeClient()
     client.script(Role.INTERVIEWER, plan("g1"), question("g1"))
     client.script(Role.CRITIC, passing())
-    client.script(Role.ASSESSOR, answered(AnswerKind.CONCRETE, GoalStatus.COVERED))
+    client.script(Role.ASSESSOR, *answered(AnswerKind.CONCRETE, GoalStatus.COVERED))
 
     final = run_interview(GOAL, client, echo_respondent("It was last Tuesday."))
     transcript = final["transcript"]
@@ -113,7 +131,7 @@ def test_rule_breaking_question_is_rewritten_without_consulting_the_model():
         question("g1", "What happened the last time you looked for a note?"),
     )
     client.script(Role.CRITIC, passing())
-    client.script(Role.ASSESSOR, answered(AnswerKind.CONCRETE, GoalStatus.COVERED))
+    client.script(Role.ASSESSOR, *answered(AnswerKind.CONCRETE, GoalStatus.COVERED))
 
     final = run_interview(GOAL, client, echo_respondent("I gave up after two minutes."))
     asked = [turn.text for turn in final["transcript"] if turn.speaker is Speaker.INTERVIEWER]
@@ -135,7 +153,7 @@ def test_subtly_leading_question_is_caught_by_the_model_critic():
         question("g1", "What happened the last time you opened the old app?"),
     )
     client.script(Role.CRITIC, rejecting("leading"), passing())
-    client.script(Role.ASSESSOR, answered(AnswerKind.CONCRETE, GoalStatus.COVERED))
+    client.script(Role.ASSESSOR, *answered(AnswerKind.CONCRETE, GoalStatus.COVERED))
 
     final = run_interview(GOAL, client, echo_respondent("It took fourteen seconds to open."))
     asked = [turn.text for turn in final["transcript"] if turn.speaker is Speaker.INTERVIEWER]
@@ -152,7 +170,7 @@ def test_a_question_the_critic_never_cleared_is_never_sent():
         *[question("g1", "Was the old app slow?") for _ in range(3)],
     )
     client.script(Role.CRITIC, *[rejecting("leading") for _ in range(3)])
-    client.script(Role.ASSESSOR, answered(AnswerKind.CONCRETE, GoalStatus.COVERED))
+    client.script(Role.ASSESSOR, *answered(AnswerKind.CONCRETE, GoalStatus.COVERED))
 
     final = run_interview(GOAL, client, echo_respondent("Sometimes."))
     asked = [turn.text for turn in final["transcript"] if turn.speaker is Speaker.INTERVIEWER]
@@ -167,10 +185,7 @@ def test_vague_answers_are_probed_then_the_interview_moves_on():
     client.script(Role.INTERVIEWER, plan("g1", "g2"))
     client.respond_with(Role.INTERVIEWER, varied_questions())
     client.respond_with(Role.CRITIC, lambda _messages, _schema: passing())
-    client.respond_with(
-        Role.ASSESSOR,
-        lambda _messages, _schema: answered(AnswerKind.VAGUE, GoalStatus.SHALLOW),
-    )
+    client.respond_with(Role.ASSESSOR, assessing(AnswerKind.VAGUE, GoalStatus.SHALLOW))
 
     vague_but_engaged = "A while, I guess. Honestly I could not tell you how long it took."
     final = run_interview(GOAL, client, echo_respondent(vague_but_engaged))
@@ -185,10 +200,7 @@ def test_short_shrinking_answers_end_the_interview_early():
     client.script(Role.INTERVIEWER, plan("g1", "g2"))
     client.respond_with(Role.INTERVIEWER, varied_questions())
     client.respond_with(Role.CRITIC, lambda _m, _s: passing())
-    client.respond_with(
-        Role.ASSESSOR,
-        lambda _m, _s: answered(AnswerKind.CONCRETE, GoalStatus.SHALLOW),
-    )
+    client.respond_with(Role.ASSESSOR, assessing(AnswerKind.CONCRETE, GoalStatus.SHALLOW))
 
     replies = iter(["A fairly long answer about what happened last Tuesday.", "yeah", "mm", "ok"])
 
@@ -207,7 +219,7 @@ def test_wrapup_reads_the_facts_back_to_the_respondent():
     client.script(Role.CRITIC, passing())
     client.script(
         Role.ASSESSOR,
-        answered(AnswerKind.CONCRETE, GoalStatus.COVERED, ["gave up after two minutes"]),
+        *answered(AnswerKind.CONCRETE, GoalStatus.COVERED, ["gave up after two minutes"]),
     )
 
     final = run_interview(GOAL, client, echo_respondent("Right, two minutes."))
@@ -223,17 +235,17 @@ def test_emergent_topics_are_recorded_once():
     client.script(Role.CRITIC, passing(), passing())
     client.script(
         Role.ASSESSOR,
-        Assessment(
-            facts=["the team shared one folder"],
-            kind=AnswerKind.NEW_THREAD,
-            goal_progress=GoalStatus.COVERED,
-            emergent_topic="shared folders with a team",
+        *answered(
+            AnswerKind.NEW_THREAD,
+            GoalStatus.COVERED,
+            ["the team shared one folder"],
+            emergent="shared folders with a team",
         ),
-        Assessment(
-            facts=["the folder was shared with four people"],
-            kind=AnswerKind.CONCRETE,
-            goal_progress=GoalStatus.COVERED,
-            emergent_topic="shared folders with a team",
+        *answered(
+            AnswerKind.CONCRETE,
+            GoalStatus.COVERED,
+            ["the folder was shared with four people"],
+            emergent="shared folders with a team",
         ),
     )
 

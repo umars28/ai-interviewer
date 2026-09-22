@@ -60,10 +60,22 @@ def _worth_probing(state: InterviewState) -> bool:
     return assessment.kind in (AnswerKind.VAGUE, AnswerKind.EVASIVE)
 
 
+def _was_rejected_as_repeat(state: InterviewState) -> bool:
+    verdict = state.get("last_verdict")
+    return verdict is not None and not verdict.passed and "repeat" in verdict.violations
+
+
 def select_focus(state: InterviewState) -> Focus:
     goals = state.get("goals", [])
     active_id = state.get("active_goal_id")
     depth = state.get("probe_depth", {})
+
+    if _was_rejected_as_repeat(state):
+        return Focus(
+            _next_open_goal(goals, active_id),
+            False,
+            "previous question repeated one already asked, so change subject",
+        )
 
     if active_id and _worth_probing(state):
         if depth.get(active_id, 0) < MAX_PROBE_DEPTH:

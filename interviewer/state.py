@@ -46,6 +46,16 @@ class Fact(BaseModel):
     turn_index: int
 
 
+class FactList(BaseModel):
+    facts: list[str] = Field(default_factory=list)
+
+
+class Classification(BaseModel):
+    kind: AnswerKind
+    goal_progress: GoalStatus
+    emergent_topic: str | None = None
+
+
 class Assessment(BaseModel):
     facts: list[str] = Field(default_factory=list)
     kind: AnswerKind

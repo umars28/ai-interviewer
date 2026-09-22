@@ -3,7 +3,8 @@ from interviewer.llm.fake import FakeClient
 from interviewer.nodes.assess import assess
 from interviewer.state import (
     AnswerKind,
-    Assessment,
+    Classification,
+    FactList,
     Goal,
     GoalStatus,
     Speaker,
@@ -27,7 +28,8 @@ def state_after_one_answer(answer: str = "It took about forty minutes to find it
 def test_a_goal_cannot_be_covered_without_a_single_extracted_fact():
     client = FakeClient().script(
         Role.ASSESSOR,
-        Assessment(facts=[], kind=AnswerKind.CONCRETE, goal_progress=GoalStatus.COVERED),
+        FactList(facts=[]),
+        Classification(kind=AnswerKind.CONCRETE, goal_progress=GoalStatus.COVERED),
     )
 
     out = assess(state_after_one_answer(), client)
@@ -39,11 +41,8 @@ def test_a_goal_cannot_be_covered_without_a_single_extracted_fact():
 def test_a_goal_with_evidence_is_allowed_to_be_covered():
     client = FakeClient().script(
         Role.ASSESSOR,
-        Assessment(
-            facts=["She searched for about forty minutes."],
-            kind=AnswerKind.CONCRETE,
-            goal_progress=GoalStatus.COVERED,
-        ),
+        FactList(facts=["She searched for about forty minutes."]),
+        Classification(kind=AnswerKind.CONCRETE, goal_progress=GoalStatus.COVERED),
     )
 
     out = assess(state_after_one_answer(), client)
@@ -56,7 +55,8 @@ def test_a_goal_with_evidence_is_allowed_to_be_covered():
 def test_concrete_without_facts_is_reclassified_as_vague():
     client = FakeClient().script(
         Role.ASSESSOR,
-        Assessment(facts=[], kind=AnswerKind.CONCRETE, goal_progress=GoalStatus.SHALLOW),
+        FactList(facts=[]),
+        Classification(kind=AnswerKind.CONCRETE, goal_progress=GoalStatus.SHALLOW),
     )
 
     out = assess(state_after_one_answer(), client)
@@ -69,7 +69,8 @@ def test_reclassified_answers_still_earn_a_probe():
     state["probing"] = False
     client = FakeClient().script(
         Role.ASSESSOR,
-        Assessment(facts=[], kind=AnswerKind.CONCRETE, goal_progress=GoalStatus.SHALLOW),
+        FactList(facts=[]),
+        Classification(kind=AnswerKind.CONCRETE, goal_progress=GoalStatus.SHALLOW),
     )
 
     out = assess(state, client)
@@ -83,7 +84,8 @@ def test_reclassified_answers_still_earn_a_probe():
 def test_a_genuinely_vague_answer_is_left_alone():
     client = FakeClient().script(
         Role.ASSESSOR,
-        Assessment(facts=[], kind=AnswerKind.VAGUE, goal_progress=GoalStatus.SHALLOW),
+        FactList(facts=[]),
+        Classification(kind=AnswerKind.VAGUE, goal_progress=GoalStatus.SHALLOW),
     )
 
     out = assess(state_after_one_answer("A while, I suppose."), client)
