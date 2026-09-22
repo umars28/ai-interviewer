@@ -39,6 +39,7 @@ class Turn(BaseModel):
     index: int
     speaker: Speaker
     text: str
+    vetted: bool = True
 
 
 class Fact(BaseModel):

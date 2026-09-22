@@ -1,10 +1,12 @@
 from eval.metrics import (
+    distinct_question_ratio,
     distinctive_tokens,
     evaluate,
     rule_violations_reaching_respondent,
     score_hidden_facts,
     turns_to_coverage,
 )
+from interviewer import rules
 from interviewer.persona import Persona
 from interviewer.state import Goal, GoalStatus, Speaker, StopReason, Turn, initial_state
 
@@ -109,3 +111,28 @@ def test_evaluate_assembles_the_four_numbers():
     assert metrics.goals_covered == metrics.goals_total == 1
     assert len(metrics.leaked_questions) == 1
     assert metrics.leaked_rate == 0.25
+
+
+def test_the_wrapup_summary_is_not_counted_as_a_leaked_question():
+    from interviewer.nodes.wrapup import TEMPLATE
+
+    summary = TEMPLATE.format(facts="- (turn 1) She searched for forty minutes.")
+    assert rules.check(summary), "the summary is deliberately long, so the rules should flag it"
+
+    transcript = [
+        Turn(index=0, speaker=Speaker.INTERVIEWER, text="What happened the last time?"),
+        Turn(index=1, speaker=Speaker.RESPONDENT, text="The sync failed."),
+        Turn(index=2, speaker=Speaker.INTERVIEWER, text=summary, vetted=False),
+        Turn(index=3, speaker=Speaker.RESPONDENT, text="That is right."),
+    ]
+
+    assert rule_violations_reaching_respondent(transcript) == []
+    assert distinct_question_ratio(transcript) == 1.0
+
+
+def test_an_unvetted_marker_does_not_hide_a_real_leak():
+    transcript = [
+        Turn(index=0, speaker=Speaker.INTERVIEWER, text="Would you use a faster app?"),
+        Turn(index=1, speaker=Speaker.RESPONDENT, text="Maybe."),
+    ]
+    assert len(rule_violations_reaching_respondent(transcript)) == 1

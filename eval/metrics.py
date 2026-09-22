@@ -147,7 +147,9 @@ def score_hidden_facts(persona: Persona, transcript: list[Turn]) -> list[FactSco
 
 
 def questions_asked(transcript: list[Turn]) -> list[str]:
-    return [turn.text for turn in transcript if turn.speaker is Speaker.INTERVIEWER]
+    return [
+        turn.text for turn in transcript if turn.speaker is Speaker.INTERVIEWER and turn.vetted
+    ]
 
 
 def rule_violations_reaching_respondent(transcript: list[Turn]) -> list[tuple[str, list[str]]]:

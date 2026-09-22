@@ -14,7 +14,9 @@ def wrapup(state: InterviewState, respondent: Respondent) -> InterviewState:
     summary = TEMPLATE.format(facts=facts_view(state.get("facts", [])))
 
     next_index = len(transcript)
-    transcript.append(Turn(index=next_index, speaker=Speaker.INTERVIEWER, text=summary))
+    transcript.append(
+        Turn(index=next_index, speaker=Speaker.INTERVIEWER, text=summary, vetted=False)
+    )
     correction = respondent(summary, state).strip()
     transcript.append(Turn(index=next_index + 1, speaker=Speaker.RESPONDENT, text=correction))
 
