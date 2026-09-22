@@ -146,5 +146,24 @@ What the live runs have shown so far:
   (`rules` or `model`), so a stalled interview can be diagnosed by reading the run instead
   of re-running it under instrumentation.
 
+### The quote validator earning its keep
+
+`docs/example-synthesis.md` is a real synthesis over those three transcripts. It reports
+**92% quote validity** — four themes and two contradictions survived, and one quote was
+dropped. The dropped one is the interesting part:
+
+| | |
+| --- | --- |
+| Model wrote | "Last time that came up? It got slow. I was in the middle of an incident…" |
+| Devan actually said | "The last time I tried to use the note-taking app, it got slow. I was in the middle of an incident…" |
+
+Everything after the first clause matches. The opening was rewritten into something more
+quotable. No reviewer skimming a findings deck would catch that, and no LLM judge reliably
+would either — it is a faithful paraphrase of a real statement. A string comparison caught
+it and threw the theme's evidence out.
+
+That is the whole argument for doing verification in code rather than asking a model to
+check itself.
+
 Not done yet: raising recall above 0.47, and tuning the interviewer itself — every gain so
 far came from fixing plumbing, not from improving how it asks questions.
