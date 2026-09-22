@@ -30,7 +30,7 @@ the false positive below was found rather than guessed at.
 | | |
 | --- | --- |
 | Interviews | 3 synthetic respondents, stopping on goal coverage rather than a turn cap |
-| Planted-fact recall | 0.10 to 0.47 across runs — see the note on variance below |
+| Planted-fact recall | 0.29 mean over nine runs, range 0.20 to 0.60 |
 | Repeated or rule-breaking questions sent | 0 |
 | Quote validity in synthesis | 92% — one near-miss paraphrase caught and dropped |
 
@@ -136,38 +136,45 @@ all: quote validation, the mechanical question rules, routing and probe budgets,
 evidence invariant, the degeneracy guards, and the full graph driven by a scripted fake
 client.
 
-Two full passes over the same three personas on `qwen3:14b` / `qwen3:8b`, a few commits
-apart:
+Baseline over nine interviews — three personas, three repeats each — on `qwen3:14b` /
+`qwen3:8b`:
 
-| persona | pass 1 | pass 2 |
-| --- | --- | --- |
-| devan | 0.40 | 0.00 |
-| hanna | 0.60 | 0.20 |
-| mira | 0.40 | degenerate |
-| **mean** | **0.47** | **0.10** |
+| persona | mean | min | max |
+| --- | --- | --- | --- |
+| devan | 0.20 | 0.20 | 0.20 |
+| hanna | 0.27 | 0.20 | 0.40 |
+| mira | 0.40 | 0.20 | 0.60 |
+| **overall** | **0.29** | 0.20 | 0.60 |
 
-### The variance is the finding
+All nine were valid: every one stopped on goal coverage rather than the turn cap, none
+repeated a question, none let a rule-breaking question through, and one forced fallback
+occurred across all nine runs. Between 21 and 31 facts were extracted per interview.
 
-Nothing between those two passes should have hurt recall — the only interview-facing change
-loosened a rule that had been rejecting valid questions. Recall still fell by a factor of
-four.
+### Why the repeats exist
 
-At `temperature` 0.7, one interview per persona is a sample of one. Both passes are
-consistent with the same underlying quality, and neither number means what it appears to
-mean. Any claim of the form "this change improved recall from X to Y" built on single runs
-is unsupported, and an earlier version of this README made exactly that claim.
+Two earlier single passes over the same personas reported mean recall of **0.47** and
+**0.10**. Nothing between them should have hurt recall — the only interview-facing change
+loosened a rule that had been rejecting valid questions — yet the number fell by a factor
+of four.
 
-So `eval.run` takes `--repeat N` and reports mean, min, and max per persona, and prints an
-explicit warning when the range is wide enough that single-run comparisons are meaningless:
+The nine-run baseline lands at 0.29, between the two. Both earlier figures were sampling
+noise around roughly the same underlying quality, and neither meant what it appeared to
+mean. An earlier version of this README claimed a specific improvement on the strength of
+one of them. That claim was unsupported.
+
+So `eval.run` takes `--repeat N`, reports mean, min and max per persona, and prints an
+explicit warning when the range is wide enough that single-run comparisons cannot show
+anything:
 
 ```sh
 uv run python -m eval.run --repeat 3 --out runs/
 ```
 
-What does hold across both passes: every interview stopped on goal coverage rather than the
-turn cap, no repeated or rule-breaking question reached a respondent, and 21 to 31 facts
-were extracted per interview. Those are structural properties the graph enforces, so they
-do not move with sampling.
+The per-persona spread also localises the difficulty. Devan returns 0.20 on every run —
+his planted facts resist the current probing strategy consistently, which is a solvable
+problem. Mira ranges 0.20 to 0.60, so her facts are reachable and the interviewer
+sometimes fails to reach them, which is a different problem. One number would have hidden
+both.
 
 What the live runs have shown so far:
 
@@ -217,7 +224,9 @@ it and threw the theme's evidence out.
 That is the whole argument for doing verification in code rather than asking a model to
 check itself.
 
-Not done yet: enough repeats to establish a real baseline, and tuning the interviewer
-itself. The clearest known weakness is that a rejected question gets reworded rather than
-fixed — shown a double-barrelled question three times in a row, the interviewer rephrased
-it into another double-barrelled question each time instead of dropping one half.
+Not done yet: tuning the interviewer itself, which has never been touched. Two concrete
+leads, both visible in the numbers above. Devan's flat 0.20 says one persona's facts are
+systematically out of reach rather than occasionally missed. And a rejected question gets
+reworded rather than fixed — shown a double-barrelled question three times in a row, the
+interviewer rephrased it into another double-barrelled question each time instead of
+dropping one half.
