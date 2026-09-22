@@ -106,20 +106,22 @@ all: quote validation, the mechanical question rules, routing and probe budgets,
 evidence invariant, the degeneracy guards, and the full graph driven by a scripted fake
 client.
 
-First valid baseline, one persona on `qwen3:14b` / `qwen3:8b`:
+Baseline across all three personas on `qwen3:14b` / `qwen3:8b`:
 
-| | |
-| --- | --- |
-| Hidden fact recall | 0.20 (1 of 5) |
-| Turns to coverage | 9 |
-| Distinct question ratio | 1.00 |
-| Forced fallbacks | 0 |
-| Leaked rule violations | 0 |
+| persona | recall | turns | to coverage | distinct | fallbacks | leaked |
+| --- | --- | --- | --- | --- | --- | --- |
+| devan | 0.40 | 5 | 5 | 1.00 | 1 | 0 |
+| hanna | 0.60 | 5 | 5 | 1.00 | 0 | 0 |
+| mira | 0.40 | 6 | 6 | 1.00 | 1 | 0 |
+| **mean** | **0.47** | | | | | |
 
-Nine distinct questions, progressively narrowing from "what did you use it for" to "describe
-the moment you realised the glossary was lost". One double-barrelled question was caught by
-the mechanical rules and rewritten before it was sent. The recall is low and that is the
-number to improve; the point is that it is now a number that can be wrong.
+All three stopped on coverage rather than on the turn cap, asked no repeated questions, and
+let no rule-violating question through. Between 22 and 27 facts were extracted per
+interview. The first run of the day scored 0.20 over nine turns, so the gain came from
+fixing the extraction path rather than from tuning the interviewer, which is still untouched.
+
+Recall of 0.47 means roughly half the planted facts stay buried. That is the number to
+improve, and the point of the harness is that it can be wrong in a way you can see.
 
 What the live runs have shown so far:
 
@@ -130,14 +132,19 @@ What the live runs have shown so far:
   feedback field, then later rejected every well-formed question it was shown. Unreliable
   in both directions, which is why the mechanical rules exist and why the critic runs on
   the larger model.
-- The assessor marked goals covered while extracting no facts at all, so an interview
-  could stop on coverage with nothing to read back. Prompting helped; the fix that holds
-  is the invariant in `assess.py` — a goal cannot reach `covered` without at least one
-  extracted fact, and an answer called concrete with no facts is reclassified as vague and
-  probed again.
+- **Schema breadth suppresses list extraction under constrained decoding.** The assessor
+  returned `facts: []` on answers full of facts. Same model, same prompt, same answer: a
+  four-field schema (`facts`, `kind`, `goal_progress`, `emergent_topic`) extracted nothing,
+  while a one-field `{facts: [...]}` schema extracted three correct facts. Prompting did
+  not move it; splitting extraction and classification into two calls took the count from
+  0 to 16 in one interview. Worth knowing before blaming a model for ignoring a prompt.
+- The assessor also marked goals covered while extracting no facts, so an interview could
+  stop on coverage with nothing to read back. The fix that holds is the invariant in
+  `assess.py` — a goal cannot reach `covered` without at least one extracted fact, and an
+  answer called concrete with no facts is reclassified as vague and probed again.
 - Every rejected question is now recorded in the saved transcript with its source
   (`rules` or `model`), so a stalled interview can be diagnosed by reading the run instead
   of re-running it under instrumentation.
 
-Not done yet: raising recall above the 0.20 baseline, running all three personas, and a
-synthesis pass over three real transcripts.
+Not done yet: raising recall above 0.47, and tuning the interviewer itself — every gain so
+far came from fixing plumbing, not from improving how it asks questions.
