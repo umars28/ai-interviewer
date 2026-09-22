@@ -54,3 +54,28 @@ def test_describe_turns_violations_into_feedback():
     text = rules.describe(["hypothetical", "double"])
     assert "would do" in text
     assert "two questions" in text
+
+
+RECOUNTS = [
+    "How would you describe your overall experience with the app?",
+    "How would you characterise the search before you left?",
+    "What would you say was the turning point?",
+    "How would you sum up the last month of using it?",
+]
+
+
+@pytest.mark.parametrize("question", RECOUNTS)
+def test_asking_someone_to_describe_their_own_experience_is_not_hypothetical(question):
+    assert "hypothetical" not in rules.check(question)
+
+
+STILL_HYPOTHETICAL = [
+    "How would you use a faster app?",
+    "What would you do if sync failed again?",
+    "How would you feel about paying for it?",
+]
+
+
+@pytest.mark.parametrize("question", STILL_HYPOTHETICAL)
+def test_genuinely_hypothetical_questions_are_still_caught(question):
+    assert "hypothetical" in rules.check(question)

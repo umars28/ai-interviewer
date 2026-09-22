@@ -13,9 +13,15 @@ CLOSED_OPENERS = re.compile(
     re.IGNORECASE,
 )
 
+INVITATION_VERBS = r"(tell|describe|walk|explain|share|talk|say|give|show|take|sum|summarise|summarize|characterise|characterize)"
+
 INVITATION = re.compile(
-    r"^\s*(can|could|would|will)\s+you\s+(please\s+)?"
-    r"(tell|describe|walk|explain|share|talk|say|give|show|take)\b",
+    rf"^\s*(can|could|would|will)\s+you\s+(please\s+)?{INVITATION_VERBS}\b",
+    re.IGNORECASE,
+)
+
+RECOUNT = re.compile(
+    rf"\b(how|what)\s+would\s+you\s+(please\s+)?{INVITATION_VERBS}\b",
     re.IGNORECASE,
 )
 
@@ -71,7 +77,7 @@ def check(question: str, asked: list[str] | tuple[str, ...] = ()) -> list[str]:
     text = question.strip()
     violations: list[str] = []
 
-    if HYPOTHETICAL.search(text):
+    if HYPOTHETICAL.search(text) and not RECOUNT.search(text):
         violations.append("hypothetical")
     if CLOSED_OPENERS.match(text) and not INVITATION.match(text):
         violations.append("closed")

@@ -2,7 +2,37 @@
 
 An agent that **interviews people** instead of answering them.
 
-Give it a research goal. It talks to a respondent over chat, decides when to probe deeper and when to move on, refuses to ask leading questions, and stops when the research goals are covered — not when the model feels done. After several interviews it synthesises themes across respondents, and every theme must carry a quote that provably exists in a transcript.
+Give it a research goal. It talks to a respondent, decides when to probe deeper and when to
+move on, refuses to ask leading questions, and stops when the research goals are covered —
+not when the model feels done. Across several interviews it synthesises themes, and every
+theme must carry a quote that provably exists in a transcript.
+
+Real output from `python -m eval.run`, no editing:
+
+```
+Q: Can you describe the last time you tried to use the note-taking app and
+   something went wrong?
+A: The last time I tried to use the note-taking app, it got slow. I was in the
+   middle of an incident, and opening a note took fourteen seconds. Three people
+   were waiting on a call, and I couldn't even get a line in.
+
+Q: What specific features or functions did you find were missing or not working
+   well in the app during that time?
+A: It didn't handle the volume. The app was built for small teams, not for someone
+   who uses it as a log for incidents and code reviews. The search was too slow,
+   and the file just kept growing.
+```
+
+What the respondent never saw is the other half of the run. Every question is checked before
+it is sent, and the saved transcript records each rejection with its cause — which is how
+the false positive below was found rather than guessed at.
+
+| | |
+| --- | --- |
+| Interviews | 3 synthetic respondents, all stopped on goal coverage rather than a turn cap |
+| Planted-fact recall | 0.47 mean |
+| Repeated or rule-breaking questions sent | 0 |
+| Quote validity in synthesis | 92% — one near-miss paraphrase caught and dropped |
 
 ## Why this exists
 
@@ -132,6 +162,12 @@ What the live runs have shown so far:
   feedback field, then later rejected every well-formed question it was shown. Unreliable
   in both directions, which is why the mechanical rules exist and why the critic runs on
   the larger model.
+- **A mechanical rule is only as good as its false-positive rate.** Two phrasings that
+  read as violations to a regex are standard research practice: `Can you tell me about…`
+  is an invitation to tell a story, not a yes/no question, and `How would you describe…`
+  asks for an existing view, not a hypothetical one. Both were rejected three times in a
+  row and forced the agent onto a generic fallback. Both were found by reading the
+  rejection log after a run, not by reasoning about the regex.
 - **Schema breadth suppresses list extraction under constrained decoding.** The assessor
   returned `facts: []` on answers full of facts. Same model, same prompt, same answer: a
   four-field schema (`facts`, `kind`, `goal_progress`, `emergent_topic`) extracted nothing,
