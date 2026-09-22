@@ -30,7 +30,7 @@ the false positive below was found rather than guessed at.
 | | |
 | --- | --- |
 | Interviews | 3 synthetic respondents, stopping on goal coverage rather than a turn cap |
-| Planted-fact recall | 0.29 mean over nine runs, range 0.20 to 0.60 |
+| Planted-fact recall | 0.29 mean over nine runs — statistically indistinguishable from a one-prompt control at 0.27 |
 | Repeated or rule-breaking questions sent | 0 |
 | Quote validity in synthesis | 92% — one near-miss paraphrase caught and dropped |
 
@@ -150,6 +150,34 @@ All nine were valid: every one stopped on goal coverage rather than the turn cap
 repeated a question, none let a rule-breaking question through, and one forced fallback
 occurred across all nine runs. Between 21 and 31 facts were extracted per interview.
 
+### The control: does any of this machinery help?
+
+A naive interviewer — one prompt, no graph, no critic, no coverage tracking, no probe
+budget — was run on the same three personas, three repeats each, with the same interviewer
+model, the same simulated respondents, the same six-turn budget, and the same recall
+metric. Only the interviewer side differs.
+
+| | mean | median | sd | min | runs scoring 0.00 |
+| --- | --- | --- | --- | --- | --- |
+| This project | 0.29 | 0.20 | 0.15 | 0.20 | 0 of 9 |
+| Naive, one prompt | 0.27 | 0.20 | 0.25 | 0.00 | 3 of 9 |
+
+**On the headline metric the graph buys nothing.** A difference of 0.02 between means whose
+standard deviations are 0.15 and 0.25 is not a result. Identical medians. Anyone reading
+this repo should know that before reading the architecture section.
+
+One difference does survive: the naive interviewer returned nothing at all on three of nine
+runs, and this one never dropped below 0.20. Same average, half the variance, no total
+failures. That is consistent with the coverage tracking and probe budget acting as a floor
+rather than a ceiling — but n=9 makes it suggestive, not established.
+
+Two honest caveats. The personas and the recall metric were both written by the same author
+as the system under test, so the metric may simply not capture what the extra machinery is
+good at. And the guarantees this project does provide — no leading or repeated question
+reaching a respondent, a stop condition tied to goal coverage rather than a fixed turn
+count, synthesis quotes verified against transcripts — are things the naive control does not
+attempt at all, so recall was never going to measure them.
+
 ### Why the repeats exist
 
 Two earlier single passes over the same personas reported mean recall of **0.47** and
@@ -224,9 +252,16 @@ it and threw the theme's evidence out.
 That is the whole argument for doing verification in code rather than asking a model to
 check itself.
 
-Not done yet: tuning the interviewer itself, which has never been touched. Two concrete
-leads, both visible in the numbers above. Devan's flat 0.20 says one persona's facts are
-systematically out of reach rather than occasionally missed. And a rejected question gets
-reworded rather than fixed — shown a double-barrelled question three times in a row, the
-interviewer rephrased it into another double-barrelled question each time instead of
-dropping one half.
+The open question is not "how do we raise 0.29" but "does the graph earn its keep at all".
+The control says it does not, on this metric. Three ways to settle that, in the order worth
+trying:
+
+1. **Raise n.** Nine runs per arm cannot separate 0.29 from 0.27. Twenty per arm could, and
+   would also test whether the zero-failure floor is real or luck.
+2. **Measure what the graph actually claims.** Recall was the wrong instrument for testing
+   coverage-driven stopping and question quality. Score whether each research goal was
+   genuinely addressed, and have a judge blind to the source rate transcript quality.
+3. **Fix the interviewer, then re-run both arms.** It has never been tuned. A rejected
+   question gets reworded rather than fixed — shown a double-barrelled question three times
+   in a row, it rephrased it into another double-barrelled question each time instead of
+   dropping one half.
