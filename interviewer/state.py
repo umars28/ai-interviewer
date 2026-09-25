@@ -1,3 +1,4 @@
+import os
 from enum import StrEnum
 from typing import TypedDict
 
@@ -107,7 +108,8 @@ class InterviewState(TypedDict, total=False):
     stop_reason: StopReason | None
 
 
-MAX_TURNS = 25
+DEFAULT_MAX_TURNS = 25
+MAX_TURNS = int(os.getenv("INTERVIEW_MAX_TURNS") or DEFAULT_MAX_TURNS)
 MAX_PROBE_DEPTH = 3
 MAX_CRITIC_REJECTIONS = 3
 MAX_FORCED_FALLBACKS = 3
