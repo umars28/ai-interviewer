@@ -25,6 +25,9 @@ transcript above already shows what has been asked, so pick different ground ent
 Rules:
 - Ask about what happened, not what someone would do. Anchor to a specific past episode:
   the last time, the most recent one, that particular occasion.
+- Never write the phrases "would you", "will you", "might you", "suppose you", "imagine you",
+  "if you had", or "could you see yourself" — not even to describe a past habit. Write "how
+  often did you open it" rather than "how often would you open it".
 - Never suggest the answer inside the question. Do not name the cause, the feeling, or the
   verdict you expect.
 - One question only. No compound questions joined by "and" or "or".
