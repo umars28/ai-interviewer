@@ -52,10 +52,13 @@ def main(argv: list[str] | None = None) -> int:
     print(f"\nResearch goal: {args.goal}")
     print("Answer in your own words. Ctrl-D to stop early.\n")
 
-    final = run_interview(args.goal, client, terminal_respondent)
-
-    print(f"\n  Stopped: {final.get('stop_reason')} after {final.get('turn_count')} turns")
-    print(f"  Saved: {save(final, args.out, args.label)}\n")
+    try:
+        final = run_interview(args.goal, client, terminal_respondent)
+        print(f"\n  Stopped: {final.get('stop_reason')} after {final.get('turn_count')} turns")
+        print(f"  Saved: {save(final, args.out, args.label)}\n")
+    finally:
+        if hasattr(client, "usage_summary"):
+            print(client.usage_summary(), flush=True)
     return 0
 
 

@@ -110,24 +110,34 @@ def main(argv: list[str] | None = None) -> int:
     args.out.mkdir(parents=True, exist_ok=True)
     results: list[InterviewMetrics] = []
 
-    for run_index in range(1, args.repeat + 1):
-        for persona in personas:
-            label = f"{persona.id} ({run_index}/{args.repeat})" if args.repeat > 1 else persona.id
-            print(f"interviewing {label} ...", flush=True)
-            state = run_interview(args.goal, client, synthetic_respondent(persona, client))
-            save(state, args.out, f"{persona.id}-r{run_index}")
-            metrics = evaluate(persona, state)
-            results.append(metrics)
-            flag = " [degenerate]" if metrics.degenerate else ""
-            print(f"  recall {metrics.hidden_fact_recall:.2f} over {metrics.turn_count} turns{flag}")
+    try:
+        for run_index in range(1, args.repeat + 1):
+            for persona in personas:
+                label = (
+                    f"{persona.id} ({run_index}/{args.repeat})" if args.repeat > 1 else persona.id
+                )
+                print(f"interviewing {label} ...", flush=True)
+                state = run_interview(args.goal, client, synthetic_respondent(persona, client))
+                save(state, args.out, f"{persona.id}-r{run_index}")
+                metrics = evaluate(persona, state)
+                results.append(metrics)
+                flag = " [degenerate]" if metrics.degenerate else ""
+                print(
+                    f"  recall {metrics.hidden_fact_recall:.2f} "
+                    f"over {metrics.turn_count} turns{flag}"
+                )
 
-    (args.out / "metrics.json").write_text(
-        json.dumps([asdict(r) for r in results], indent=2), encoding="utf-8"
-    )
-    print()
-    print(report(results))
-    if args.repeat > 1:
-        print(spread(results))
+        (args.out / "metrics.json").write_text(
+            json.dumps([asdict(r) for r in results], indent=2), encoding="utf-8"
+        )
+        print()
+        print(report(results))
+        if args.repeat > 1:
+            print(spread(results))
+    finally:
+        if hasattr(client, "usage_summary"):
+            print()
+            print(client.usage_summary(), flush=True)
     return 0
 
 
