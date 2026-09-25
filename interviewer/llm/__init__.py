@@ -15,8 +15,14 @@ def build_client(backend: str | None = None) -> LLMClient:
         from interviewer.llm.anthropic import AnthropicClient
 
         return AnthropicClient()
+    if name == "gateway":
+        from interviewer.llm.gateway import GatewayClient
+
+        return GatewayClient()
     if name == "fake":
         from interviewer.llm.fake import FakeClient
 
         return FakeClient()
-    raise LLMError(f"unknown LLM_BACKEND {name!r}; expected ollama, anthropic, or fake")
+    raise LLMError(
+        f"unknown LLM_BACKEND {name!r}; expected ollama, gateway, anthropic, or fake"
+    )
