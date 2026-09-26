@@ -97,6 +97,13 @@ def test_the_bearer_token_is_sent_on_every_request():
     assert seen["auth"] == "Bearer secret-key"
 
 
+def test_a_missing_host_fails_before_any_request(monkeypatch):
+    monkeypatch.delenv("LLM_GATEWAY_HOST", raising=False)
+
+    with pytest.raises(LLMError, match="LLM_GATEWAY_HOST is not set"):
+        GatewayClient(api_key="k")
+
+
 def test_a_missing_api_key_fails_before_any_request(monkeypatch):
     monkeypatch.delenv("LLM_API_KEY", raising=False)
 

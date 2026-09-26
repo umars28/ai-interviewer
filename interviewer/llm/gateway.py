@@ -14,7 +14,6 @@ MODELS: dict[Role, str] = {
     Role.SYNTHESIZER: "claude-sonnet",
 }
 
-DEFAULT_HOST = "https://llm.devopsinstitute.id"
 TOOL_NAME = "emit"
 CONNECT_TIMEOUT = 10.0
 READ_TIMEOUT = 120.0
@@ -62,7 +61,12 @@ class GatewayClient:
         api_key: str | None = None,
         models: dict[Role, str] | None = None,
     ) -> None:
-        self.host = (host or os.getenv("LLM_GATEWAY_HOST") or DEFAULT_HOST).rstrip("/")
+        self.host = (host or os.getenv("LLM_GATEWAY_HOST") or "").rstrip("/")
+        if not self.host:
+            raise LLMError(
+                "LLM_GATEWAY_HOST is not set; point it at your gateway before "
+                "using LLM_BACKEND=gateway"
+            )
         self.api_key = api_key or os.getenv("LLM_API_KEY") or ""
         if not self.api_key:
             raise LLMError(
