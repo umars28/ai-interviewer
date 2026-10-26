@@ -34,6 +34,17 @@ the false positive below was found rather than guessed at.
 | Repeated or rule-breaking questions sent | 0 |
 | Quote validity in synthesis | 92% — one near-miss paraphrase caught and dropped |
 
+## At a glance
+
+| | |
+| --- | --- |
+| **What it shows** | How to make an open-ended LLM agent measurable. Synthetic respondents hide planted facts, so interview quality becomes numbers instead of "looks good to me". |
+| **Key design** | A LangGraph state machine tracks research-goal coverage as the stop condition. A critic rejects leading or hypothetical questions before they are sent. Quotes in the synthesis are verified against transcripts by string matching, not by a model. |
+| **Honest result** | A one-prompt control scores the same recall (0.27 vs 0.29 over nine runs each). The README says so up front, together with the one difference that survives: no total failures, half the variance. |
+| **Caught by its own checks** | A metric that scored a broken run 1.00 is now voided by degeneracy guards. A faithful-looking paraphrased quote was rejected by the validator. |
+| **Engineering** | 126 tests that need no model (scripted fake client). Models are chosen by role, so the provider is swappable between Ollama and Claude. |
+| **Stack** | Python, LangGraph, Pydantic, httpx, Ollama (`qwen3:14b` / `qwen3:8b`), pytest, ruff |
+
 ## Why this exists
 
 Most LLM projects cannot be evaluated: the only judge is "looks good to me". This one can. Synthetic respondents are seeded with facts that only surface under correct probing, which turns interview quality into four numbers:
@@ -131,7 +142,7 @@ uv run python -m eval.metrics runs/
 
 ## Status
 
-Working end to end against local models. 91 tests cover the parts that need no model at
+Working end to end against local models. 126 tests cover the parts that need no model at
 all: quote validation, the mechanical question rules, routing and probe budgets, the
 evidence invariant, the degeneracy guards, and the full graph driven by a scripted fake
 client.
